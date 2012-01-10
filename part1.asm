@@ -17,7 +17,7 @@ prompt:
 	mov	edx, 200	; arg3 - size_t len
 	mov	ecx, buffer	; arg2 - char *buf
 	mov	ebx, 0		; arg1 - int fd (STDIN)
-	mov	eax, 3		; 
+	mov	eax, 3		; syscall 3 = read
 	int	0x80		; call read(STDIN, buffer, 200)
 
 	mov	edi, 0		; edi counts string length
@@ -39,7 +39,7 @@ print:
 	mov	edx, edi	; arg3 - size_t len
 	mov	ecx, buffer	; arg2 - char  *buf
 	mov	ebx, 1		; arg1 - int fd (STDOUT)
-	mov	eax, 4		; 
+	mov	eax, 4		; syscall 4 = write
 	int	0x80		; call write(STDOUT, buffer, 200)
 done:
 	mov	ebx, 0
