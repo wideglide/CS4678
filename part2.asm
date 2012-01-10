@@ -15,19 +15,19 @@ extern exit
 global	main
 
 main:
-	mov esi, [esp + 8]	; argv resides here
-	mov edx, [esp + 4]	; argc resides here
+	mov 	esi, [esp + 8]	; argv resides here
+	mov 	edx, [esp + 4]	; argc resides here
 print:
-	push DWORD [esi]	; ptr to argv[x]
-	call printf
-	pop eax
-	push newline		; print a '\n'
-	call printf
-	pop eax
-	dec DWORD [esp + 4]	; dec argc
-	jz done			; argc == 0 means we're done
-	add esi, 4		; next ptr - argv[x+1]
-	jmp print
+	push 	DWORD [esi]	; ptr to argv[x]
+	call 	printf
+	pop 	eax
+	push 	newline		; print a '\n'
+	call 	printf
+	pop 	eax
+	dec 	DWORD [esp + 4]	; dec argc
+	jz 	done			; argc == 0 means we're done
+	add 	esi, 4		; next ptr - argv[x+1]
+	jmp 	print
 done:
-	push 0
-	call exit 
+	push 	0
+	call 	exit 
