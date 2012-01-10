@@ -1,3 +1,7 @@
+;nasm -f elf part3.asm
+;nasm -f elf start.asm
+;gcc -o main main.c start.o part3.o -nostdlib
+
 USE32
 section	.data
 
@@ -19,7 +23,7 @@ l_strlen:
 	xor 	eax, eax		; set eax to zero
 	mov 	edi, [ebp + 8]	; string (arg1) 
 	repnz 	scasb		; scan for eax (null)
-	inc 	ecx		; get the length
+	inc	ecx		; get the length (don't count null)
 	not 	ecx		; now ecx is the count
 	mov 	eax, ecx
 	pop 	edi		;restore edi
@@ -35,12 +39,13 @@ l_strcmp:
 	push 	esi		; save esi, edi
 	push 	edi
 	cld			; clear DF, count up
-	mov 	ecx, -1		; set the length for length
-	xor 	eax, eax		; 
+	mov 	ecx, -1		; init counter for length
+	xor 	eax, eax		; clear eax
 	mov 	edi, [ebp + 8]	; set string1 (arg1)
 	repnz 	scasb		; get scan for (null)
-	inc 	ecx		; get the length
+	inc	ecx		; set the length
 	not 	ecx		; ecx has count for compare
+	mov 	edi, [ebp + 8]	; set string1 (arg1)
 	mov 	esi, [ebp + 12]	; set string2 (arg2)
 	repe 	cmpsb		; compare the strings
 	xor 	eax, eax		; set eax to zero
@@ -65,7 +70,7 @@ l_gets:
 	push 	edi
 
 	mov	edi, [ebp + 16]	; real length
-	mov	edx, 1			; read one byte
+	mov	edx, 1			; read one byte ( in loop )
 	mov	ecx, [ebp + 12]	; arg2 - char *buf
 	mov	ebx, [ebp + 8]	; arg1 - int fd
 .stdin:
@@ -83,6 +88,7 @@ l_gets:
 	jz	.done
 	xor	eax, eax	; clear eax
 	mov	al, [ecx]
+	xor	al, 0x0A	; check for '\n'
 	jz	.done
 	inc	ecx
 	jmp	.loop
@@ -114,7 +120,6 @@ l_write:
 	mov	esp, ebp	; restore esp
 	pop	ebp		; restore caller's fp
 	ret
-
 
 
 l_exit:
