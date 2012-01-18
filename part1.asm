@@ -1,5 +1,14 @@
+;--------------------------------------------
+; Name: Josh Bundt
+; Class: CS4678
+; Assignment 2
+; File: part1.asm
+; Last modified: 17 Jan 2012
+;--------------------------------------------
+;
 ;nasm -f elf part1.asm
 ;ld -o part1 part1.o
+
 USE32
 section	.data
 

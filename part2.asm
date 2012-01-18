@@ -1,3 +1,11 @@
+;--------------------------------------------
+; Name: Josh Bundt
+; Class: CS4678
+; Assignment 2
+; File: part2.asm
+; Last modified: 17 Jan 2012
+;--------------------------------------------
+;
 ;nasm -f elf part2.asm
 ;gcc -o part2 part2.o
 
@@ -18,15 +26,15 @@ main:
 	mov 	esi, [esp + 8]	; argv resides here
 	mov 	edx, [esp + 4]	; argc resides here
 print:
-	push 	DWORD [esi]	; ptr to argv[x]
+	push 	DWORD [esi]		; ptr to argv[x]
 	call 	printf
 	pop 	eax
-	push 	newline		; print a '\n'
+	push 	newline			; print a '\n'
 	call 	printf
 	pop 	eax
 	dec 	DWORD [esp + 4]	; dec argc
 	jz 	done			; argc == 0 means we're done
-	add 	esi, 4		; next ptr - argv[x+1]
+	add 	esi, 4			; next ptr - argv[x+1]
 	jmp 	print
 done:
 	push 	0

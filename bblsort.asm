@@ -1,3 +1,11 @@
+;--------------------------------------------
+; Name: Josh Bundt
+; Class: CS4678
+; Assignment 1
+; File: bblsort.asm
+; Last modified: 17 Jan 2012
+;--------------------------------------------
+;
 ;nasm -f elf bblsort.asm
 ;ld -o sort bblort.o
 
@@ -20,7 +28,7 @@ _start:
 
 outerloop:
 	mov	ecx, 0
-	mov	edi, 1			; $edi test if swaps are made
+	mov	edi, 0			; $edi test if swaps are made
 innerloop:
 	mov	eax, [array + ecx *4]
 	mov 	ebx, [array +4 + ecx * 4]
@@ -35,11 +43,11 @@ next:
 	jl	innerloop
 endinner:
 	inc	DWORD [passes]
-	dec	edi			; if $edi is zero we're done
+	test	edi, edi		; if $edi is zero we're done
 	jz	done
 	dec	edx
 	jnz	outerloop
 done:
-	mov	ebx, DWORD [passes]	; first syscall argument: exit code
+	mov	ebx, [passes]		; first syscall argument: exit code
 	mov	eax, 1			; system call number (sys_exit)
 	int	0x80			; call kernel
