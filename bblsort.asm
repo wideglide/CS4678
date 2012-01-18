@@ -1,5 +1,5 @@
 ;--------------------------------------------
-; Name: Josh Bundt
+; Name:
 ; Class: CS4678
 ; Assignment 1
 ; File: bblsort.asm
