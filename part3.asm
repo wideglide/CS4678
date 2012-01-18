@@ -1,5 +1,5 @@
 ;--------------------------------------------
-; Name: Josh Bundt
+; Name:
 ; Class: CS4678
 ; Assignment 2
 ; File: part3.asm
