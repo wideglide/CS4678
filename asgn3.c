@@ -10,7 +10,7 @@
 void (*function)(int);
 
 void func1(int fd) {
-	char *buf[64];
+	char buf[64];
 	int count;
 
 	while(1) {
