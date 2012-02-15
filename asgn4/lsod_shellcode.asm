@@ -1,5 +1,14 @@
 ; nasm -f bin shellcode.asm
 
+;--------------------------------------------
+; Name: 
+; Class: CS4678
+; Assignment 5
+; File: lsod_shellcode.asm
+; Last modified: 12 Feb 2012
+;---------------------------------------------
+;
+
 ;LSoD spawn a shell
 
 ;syscall     %eax %ebx,%ecx,%edx

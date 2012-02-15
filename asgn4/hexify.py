@@ -43,7 +43,7 @@ def hexifyPy(filename, C=False):
                 if (((loopCnt + 1) % 16) == 0):
                         if ((loopCnt * 2) != (len(shellcode) - 1)):
                                 if not C:
-                                        write('\" + \\\n')
+                                        write('\" .\n')
                                 else:
                                         write('\"\n')
 
