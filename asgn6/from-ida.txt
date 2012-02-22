@@ -1,0 +1,254 @@
+.text:08048AE1
+.text:08048AE1 ; =============== S U B R O U T I N E =======================================
+.text:08048AE1
+.text:08048AE1 ; Attributes: bp-based frame
+.text:08048AE1
+.text:08048AE1 ; int __cdecl handleClient(int fd)
+.text:08048AE1                 public handleClient
+.text:08048AE1 handleClient    proc near               ; CODE XREF: main+270p
+.text:08048AE1
+.text:08048AE1 lineNum         = dword ptr -7F0h
+.text:08048AE1 lineNum2        = dword ptr -7ECh
+.text:08048AE1 counter         = dword ptr -7E8h
+.text:08048AE1 filePtr         = dword ptr -7E4h
+.text:08048AE1 linePtr         = dword ptr -7E0h
+.text:08048AE1 charPtr1        = dword ptr -7DCh
+.text:08048AE1 s               = dword ptr -7D8h
+.text:08048AE1 var_7D4         = dword ptr -7D4h
+.text:08048AE1 fd              = dword ptr  8
+.text:08048AE1
+.text:08048AE1                 push    ebp
+.text:08048AE2                 mov     ebp, esp
+.text:08048AE4                 sub     esp, 808h
+.text:08048AEA                 mov     dword ptr [esp+4], offset modes ; "r+"
+.text:08048AF2                 mov     eax, [ebp+fd]
+.text:08048AF5                 mov     [esp], eax      ; fd
+.text:08048AF8                 call    _fdopen
+.text:08048AFD                 mov     [ebp+filePtr], eax
+.text:08048B03                 mov     [ebp+counter], 0
+.text:08048B0D                 mov     dword ptr [esp+4], 0 ; fd2
+.text:08048B15                 mov     eax, [ebp+fd]
+.text:08048B18                 mov     [esp], eax      ; fd
+.text:08048B1B                 call    _dup2
+.text:08048B20                 mov     dword ptr [esp+8], 2000 ; n
+.text:08048B28                 mov     dword ptr [esp+4], 0 ; c
+.text:08048B30                 lea     eax, [ebp+s]
+.text:08048B36                 mov     [esp], eax      ; s
+.text:08048B39                 call    _memset
+.text:08048B3E                 mov     dword ptr [esp+4], offset WELCOME ; "Welcome to the simple line editor!\n"
+.text:08048B46                 mov     eax, [ebp+filePtr]
+.text:08048B4C                 mov     [esp], eax      ; stream
+.text:08048B4F                 call    _fprintf
+.text:08048B54
+.text:08048B54 loop_top:                               ; CODE XREF: handleClient+16Dj
+.text:08048B54                                         ; handleClient+188j ...
+.text:08048B54                 mov     eax, [ebp+filePtr]
+.text:08048B5A                 mov     [esp], eax      ; stream
+.text:08048B5D                 call    _fflush
+.text:08048B62                 mov     eax, [ebp+filePtr]
+.text:08048B68                 mov     [esp+8], eax    ; stream
+.text:08048B6C                 mov     dword ptr [esp+4], 256 ; n
+.text:08048B74                 mov     dword ptr [esp], offset buffer_0 ; s
+.text:08048B7B                 call    _fgets
+.text:08048B80                 mov     dword ptr [esp+4], 0Ah ; c
+.text:08048B88                 mov     dword ptr [esp], offset buffer_0 ; s
+.text:08048B8F                 call    _strchr
+.text:08048B94                 mov     [ebp+charPtr1], eax
+.text:08048B9A                 cmp     [ebp+charPtr1], 0
+.text:08048BA1                 jz      short loc_8048BAC
+.text:08048BA3                 mov     eax, [ebp+charPtr1]
+.text:08048BA9                 mov     byte ptr [eax], 0
+.text:08048BAC
+.text:08048BAC loc_8048BAC:                            ; CODE XREF: handleClient+C0j
+.text:08048BAC                 mov     dword ptr [esp+4], offset s2 ; "quit"
+.text:08048BB4                 mov     dword ptr [esp], offset buffer_0 ; s1
+.text:08048BBB                 call    _strcmp
+.text:08048BC0                 test    eax, eax
+.text:08048BC2                 jnz     short add_line
+.text:08048BC4                 jmp     cleanup
+.text:08048BC9 ; ---------------------------------------------------------------------------
+.text:08048BC9
+.text:08048BC9 add_line:                               ; CODE XREF: handleClient+E1j
+.text:08048BC9                 mov     dword ptr [esp+4], offset aAdd ; "add"
+.text:08048BD1                 mov     dword ptr [esp], offset buffer_0 ; s1
+.text:08048BD8                 call    _strcmp
+.text:08048BDD                 test    eax, eax
+.text:08048BDF                 jnz     replace_line
+.text:08048BE5                 cmp     [ebp+counter], 499
+.text:08048BEF                 jg      short linesFull
+.text:08048BF1                 mov     dword ptr [esp], 256 ; size
+.text:08048BF8                 call    _malloc
+.text:08048BFD                 mov     [ebp+linePtr], eax
+.text:08048C03                 mov     eax, [ebp+linePtr]
+.text:08048C09                 mov     [esp+8], eax
+.text:08048C0D                 mov     dword ptr [esp+4], offset format ; "Allocated %p\n"
+.text:08048C15                 mov     eax, [ebp+filePtr]
+.text:08048C1B                 mov     [esp], eax      ; stream
+.text:08048C1E                 call    _fprintf
+.text:08048C23                 mov     eax, [ebp+linePtr]
+.text:08048C29                 mov     [esp], eax      ; s
+.text:08048C2C                 call    _gets
+.text:08048C31                 mov     eax, [ebp+counter]
+.text:08048C37                 mov     edx, eax
+.text:08048C39                 mov     eax, [ebp+linePtr]
+.text:08048C3F                 mov     [ebp+edx*4+s], eax
+.text:08048C46                 lea     eax, [ebp+counter]
+.text:08048C4C                 inc     dword ptr [eax]
+.text:08048C4E                 jmp     loop_top
+.text:08048C53 ; ---------------------------------------------------------------------------
+.text:08048C53
+.text:08048C53 linesFull:                              ; CODE XREF: handleClient+10Ej
+.text:08048C53                 mov     dword ptr [esp+4], offset aSorryTooManyLi ; "Sorry, too many lines\n"
+.text:08048C5B                 mov     eax, [ebp+filePtr]
+.text:08048C61                 mov     [esp], eax      ; stream
+.text:08048C64                 call    _fprintf
+.text:08048C69                 jmp     loop_top
+.text:08048C6E ; ---------------------------------------------------------------------------
+.text:08048C6E
+.text:08048C6E replace_line:                           ; CODE XREF: handleClient+FEj
+.text:08048C6E                 mov     dword ptr [esp+8], 8 ; n
+.text:08048C76                 mov     dword ptr [esp+4], offset aReplace ; "replace "
+.text:08048C7E                 mov     dword ptr [esp], offset buffer_0 ; s1
+.text:08048C85                 call    _strncmp
+.text:08048C8A                 test    eax, eax
+.text:08048C8C                 jnz     short delete_line
+.text:08048C8E                 lea     eax, [ebp+lineNum2]
+.text:08048C94                 mov     [esp+8], eax
+.text:08048C98                 mov     dword ptr [esp+4], offset aD ; "%d"
+.text:08048CA0                 mov     dword ptr [esp], (offset buffer_0+8) ; s
+.text:08048CA7                 call    _sscanf
+.text:08048CAC                 cmp     [ebp+lineNum2], 0
+.text:08048CB3                 js      loop_top
+.text:08048CB9                 mov     eax, [ebp+lineNum2]
+.text:08048CBF                 cmp     eax, [ebp+counter]
+.text:08048CC5                 jge     loop_top
+.text:08048CCB                 mov     eax, [ebp+lineNum2]
+.text:08048CD1                 mov     eax, [ebp+eax*4+s]
+.text:08048CD8                 mov     [esp], eax      ; s
+.text:08048CDB                 call    _gets
+.text:08048CE0                 mov     eax, [ebp+lineNum2]
+.text:08048CE6                 mov     [esp+8], eax
+.text:08048CEA                 mov     dword ptr [esp+4], offset aLineDReplaced ; "Line %d replaced\n"
+.text:08048CF2                 mov     eax, [ebp+filePtr]
+.text:08048CF8                 mov     [esp], eax      ; stream
+.text:08048CFB                 call    _fprintf
+.text:08048D00                 jmp     loop_top
+.text:08048D05 ; ---------------------------------------------------------------------------
+.text:08048D05
+.text:08048D05 delete_line:                            ; CODE XREF: handleClient+1ABj
+.text:08048D05                 mov     dword ptr [esp+8], 7 ; n
+.text:08048D0D                 mov     dword ptr [esp+4], offset aDelete ; "delete "
+.text:08048D15                 mov     dword ptr [esp], offset buffer_0 ; s1
+.text:08048D1C                 call    _strncmp
+.text:08048D21                 test    eax, eax
+.text:08048D23                 jnz     print
+.text:08048D29                 lea     eax, [ebp+lineNum2]
+.text:08048D2F                 mov     [esp+8], eax
+.text:08048D33                 mov     dword ptr [esp+4], offset aD ; "%d"
+.text:08048D3B                 mov     dword ptr [esp], (offset buffer_0+7) ; s
+.text:08048D42                 call    _sscanf
+.text:08048D47                 cmp     [ebp+lineNum2], 0
+.text:08048D4E                 js      loop_top
+.text:08048D54                 mov     eax, [ebp+lineNum2]
+.text:08048D5A                 cmp     eax, [ebp+counter]
+.text:08048D60                 jge     loop_top
+.text:08048D66                 mov     eax, [ebp+lineNum2]
+.text:08048D6C                 mov     eax, [ebp+eax*4+s]
+.text:08048D73                 mov     [esp], eax      ; ptr
+.text:08048D76                 call    _free
+.text:08048D7B                 mov     eax, [ebp+lineNum2]
+.text:08048D81                 mov     eax, [ebp+eax*4+s]
+.text:08048D88                 mov     [esp+8], eax
+.text:08048D8C                 mov     dword ptr [esp+4], offset aFreedP ; "Freed %p\n"
+.text:08048D94                 mov     eax, [ebp+filePtr]
+.text:08048D9A                 mov     [esp], eax      ; stream
+.text:08048D9D                 call    _fprintf
+.text:08048DA2                 lea     eax, [ebp+counter]
+.text:08048DA8                 dec     dword ptr [eax]
+.text:08048DAA                 mov     eax, [ebp+lineNum2]
+.text:08048DB0                 mov     [ebp+lineNum], eax
+.text:08048DB6
+.text:08048DB6 loc_8048DB6:                            ; CODE XREF: handleClient+307j
+.text:08048DB6                 mov     eax, [ebp+lineNum]
+.text:08048DBC                 cmp     eax, [ebp+counter]
+.text:08048DC2                 jl      short loc_8048DC6
+.text:08048DC4                 jmp     short loc_8048DEA
+.text:08048DC6 ; ---------------------------------------------------------------------------
+.text:08048DC6
+.text:08048DC6 loc_8048DC6:                            ; CODE XREF: handleClient+2E1j
+.text:08048DC6                 mov     edx, [ebp+lineNum]
+.text:08048DCC                 mov     eax, [ebp+lineNum]
+.text:08048DD2                 mov     eax, [ebp+eax*4+var_7D4]
+.text:08048DD9                 mov     [ebp+edx*4+s], eax
+.text:08048DE0                 lea     eax, [ebp+lineNum]
+.text:08048DE6                 inc     dword ptr [eax]
+.text:08048DE8                 jmp     short loc_8048DB6
+.text:08048DEA ; ---------------------------------------------------------------------------
+.text:08048DEA
+.text:08048DEA loc_8048DEA:                            ; CODE XREF: handleClient+2E3j
+.text:08048DEA                 mov     eax, [ebp+counter]
+.text:08048DF0                 mov     [ebp+eax*4+s], 0
+.text:08048DFB                 mov     eax, [ebp+lineNum2]
+.text:08048E01                 mov     [esp+8], eax
+.text:08048E05                 mov     dword ptr [esp+4], offset aLineDDeleted ; "Line %d deleted\n"
+.text:08048E0D                 mov     eax, [ebp+filePtr]
+.text:08048E13                 mov     [esp], eax      ; stream
+.text:08048E16                 call    _fprintf
+.text:08048E1B                 jmp     loop_top
+.text:08048E20 ; ---------------------------------------------------------------------------
+.text:08048E20
+.text:08048E20 print:                                  ; CODE XREF: handleClient+242j
+.text:08048E20                 mov     dword ptr [esp+4], offset aPrint ; "print"
+.text:08048E28                 mov     dword ptr [esp], offset buffer_0 ; s1
+.text:08048E2F                 call    _strcmp
+.text:08048E34                 test    eax, eax
+.text:08048E36                 jnz     loop_top
+.text:08048E3C                 mov     [ebp+lineNum], 0
+.text:08048E46
+.text:08048E46 print_continue:                         ; CODE XREF: handleClient+3B1j
+.text:08048E46                 mov     eax, [ebp+lineNum]
+.text:08048E4C                 cmp     eax, [ebp+counter]
+.text:08048E52                 jl      short print_line
+.text:08048E54                 jmp     loop_top
+.text:08048E59 ; ---------------------------------------------------------------------------
+.text:08048E59
+.text:08048E59 print_line:                             ; CODE XREF: handleClient+371j
+.text:08048E59                 mov     eax, [ebp+lineNum]
+.text:08048E5F                 mov     eax, [ebp+eax*4+s]
+.text:08048E66                 mov     [esp+0Ch], eax
+.text:08048E6A                 mov     eax, [ebp+lineNum]
+.text:08048E70                 mov     [esp+8], eax
+.text:08048E74                 mov     dword ptr [esp+4], offset aDS ; "%d: %s\n"
+.text:08048E7C                 mov     eax, [ebp+filePtr]
+.text:08048E82                 mov     [esp], eax      ; stream
+.text:08048E85                 call    _fprintf
+.text:08048E8A                 lea     eax, [ebp+lineNum]
+.text:08048E90                 inc     dword ptr [eax]
+.text:08048E92                 jmp     short print_continue
+.text:08048E94 ; ---------------------------------------------------------------------------
+.text:08048E94
+.text:08048E94 cleanup:                                ; CODE XREF: handleClient+E3j
+.text:08048E94                 mov     [ebp+lineNum], 0
+.text:08048E9E
+.text:08048E9E free_loop:                              ; CODE XREF: handleClient+3EAj
+.text:08048E9E                 mov     eax, [ebp+lineNum]
+.text:08048EA4                 cmp     eax, [ebp+counter]
+.text:08048EAA                 jl      short free_ptr
+.text:08048EAC                 jmp     short done
+.text:08048EAE ; ---------------------------------------------------------------------------
+.text:08048EAE
+.text:08048EAE free_ptr:                               ; CODE XREF: handleClient+3C9j
+.text:08048EAE                 mov     eax, [ebp+lineNum]
+.text:08048EB4                 mov     eax, [ebp+eax*4+s]
+.text:08048EBB                 mov     [esp], eax      ; ptr
+.text:08048EBE                 call    _free
+.text:08048EC3                 lea     eax, [ebp+lineNum]
+.text:08048EC9                 inc     dword ptr [eax]
+.text:08048ECB                 jmp     short free_loop
+.text:08048ECD ; ---------------------------------------------------------------------------
+.text:08048ECD
+.text:08048ECD done:                                   ; CODE XREF: handleClient+3CBj
+.text:08048ECD                 leave
+.text:08048ECE                 retn
+.text:08048ECE handleClient    endp
+.text:08048ECE
