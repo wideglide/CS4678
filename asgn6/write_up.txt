@@ -1,0 +1,129 @@
+Part 1 (90%): 
+1. How does this program accept input from a user?
+
+connect via TCP to port 4444
+Available commands are
+	'add' followed by a line of input
+	'print'
+	'delete #'
+	'replace #'
+	'quit'
+
+2. Describe the vulnerability present in this program.
+
+This program uses the libc fuction gets() to read user supplied input into a buffer.  This allows a user to overflow the buffer and exploit the program with a heap overflow.
+
+gets() reads a line from stdin into the buffer pointed to by  s  until
+       either  a terminating newline or EOF, which it replaces with '\0'.  No
+       check for buffer overrun is performed (see BUGS below)
+
+3. Discuss any restrictions on the user's input that must be taken into account when
+attempting to trigger the vulnerability.
+
+	The users must first enter a command, 'add' which then directs the execution path to request a line of input via the gets function.  The function gets will copy input until a newline or EOF is found.  Thus an exploit may not contain the hex byte '\x0a'.  The user may 'stage' multiple buffers sequentially in memory with consecutive 'add' commands.  These will all be stored in the programs heap memory section.
+
+4. Discuss the structure of a user input that will successfully avoid any restrictions and
+allow you to successfully take control of this program. Be as detailed as possible (size,
+format, content...).
+
+	Two consecutive buffers must be allocated with the 'add' command.  The size and content of the data passed after each add does not matter, this step is merely setting up the heap for an exploit.
+
+	The first buffer of the two needs to be overwritten with the command 'replace #'.  The format of this write should contain the shellcode and enough padding to fill the first buffer and then overwrite the control information of the second buffer.  Since each malloc call requests 256 bytes, the total size of the buffer is 264 bytes including the prev_size and size fields.  
+
+
+5. Develop an exploit that injects shellcode as part of the user supplied input and transfers
+control to that shell code. You may choose any payload that you feel will demonstrate
+that you have successfully taken control of the target process, but the shellcode should
+result in an interactive shell being available to the attacker.
+
+
+6. For the exploit you develop make diagrams of the heap layout following each malloc and
+free operation. The diagrams must clearly show each allocated and free block in the heap.
+The diagram need not be to scale; I am only interested in the sequence of the blocks in
+the heap, not their exact sizes or addresses.
+
+--This is the structure of the heap from the exploit 'one_exploit.pl'.
+
+	first add yields:	     second add yields:
+ |------------------------|	|------------------------|
+ | prev_size (??)         |	| prev_size (??)         |
+ |      size (0x109)      |	|      size (0x109)      |
+ |  -------------------   |	|  -------------------   |
+ |   data (264 total)     |	|   data (264 total)     |
+ |------------------------|	|------------------------|
+ | free space             |	| prev_size (??)         |
+ |------------------------|	|      size (0x109)      |
+				|  -------------------   |
+				|   data (264 total)     |
+				|------------------------|
+				| free space             |
+				|------------------------|
+
+	replace 0 yields:	    delete 0 yeilds
+ |------------------------|	|------------------------|
+ | prev_size (??)         |	| free space (264 total) |
+ |      size (0x109)      |	|      size (0xf9)       |
+ |  -------------------   |	|                        |
+ |   data (264 total)     |	|                        |
+ | prev_size (PPPP)  fake |	| prev_size (0xf8)  fake |
+ |      size (-16)   fake |	|      size (-16)   fake |
+ |        fd (BBBB)  fake |	|        fd (BBBB)  fake |
+ |        bk (BBBB)  fake |	|        bk (BBBB)  fake |
+ |------------------------|	|------------------------|
+ | prev_size (PPPP)       |	| prev_size (PPPP)       |
+ |      size (-16)        |	|      size (-16)        |
+ |  -------------------   |	|  -------------------   |
+ |        fd (tgt-12)     |	|        fd (tgt-12)     |
+ |        bk (code+8)     |	|        bk (code+8)     |
+ |   data (264 total)     |	|   data (264 total)     |
+ |------------------------|	|------------------------|
+ | free space             |	| free space             |
+ |------------------------|	|------------------------|
+
+
+
+7. Describe all locations that are candidates for the target of your 4 byte write. List only
+those locations that might successfully be used to transfer control to your payload.
+Describe each location in as much detail as possible including information such as the
+address of the location, the purpose of the location, and the program section in which the
+location is located.
+
+	There are quite a few functions in the GOT that get called an will yield a successful exploit.  These are all located in the function handleClient, with the exception of exit.  After handleClient returns, only exit is called before the child process exits. 
+
+ - fprintf requires no additional commands, happens directly after free
+# fprintf pointer   @ 0x0804a4c4  ( -12 = 0x0804a4b8)
+ - fflush requires no additional commands, happens when the program loops back to the beginning
+# fflush pointer    @ 0x0804a4d0  ( -12 = 0x0804a4c4)
+ - fgets requires no additional commands, called after the fflush
+# fgets pointer     @ 0x0804a4f0  ( -12 = 0x0804a4e4)
+ - strcmp requires a command input, it is called to check for 'quit'
+# strcmp pointer    @ 0x0804a4b8  ( -12 = 0x0804a4ac)
+ - gets requires an add or replace command
+# gets pointer      @ 0x0804a4d4  ( -12 = 0x0804a4c8)
+ - malloc requires an add command
+# malloc pointer    @ 0x0804a4e0  ( -12 = 0x0804a4d0)
+ - strncmp requies a command input of NOT( quit or add )
+# strncmp           @ 0x0804a4fc  ( -12 = 0x0804a4f0)
+ - scanf requires the replace or delete command
+# sscanf pointer    @ 0x0804a514  ( -12 = 0x0804a508)
+ - free requires the delete command
+# free pointer      @ 0x0804a518  ( -12 = 0x0804a50c)
+ - exit requires the quit command
+# exit point        @ 0x0804a510  ( -12 = 0x0804a504)
+
+You can also write to the dtors section.  This requires the program proceeding until the 'quit' command is received, then the child process of the server terminates and executes the fuction pointer written in the dtors section.
+# dtors section     @ 0x8048a49c  ( -12 = 0x0804a490)
+
+Several of these various exploits are demonstrated in 'exploit.pl'
+'perl exploit.pl' - will initiate the fprintf write
+'perl exploit.pl --fflush'
+'perl exploit.pl --fgets'
+'perl exploit.pl --dtors'
+
+
+Part 2 (10%):
+1. Create an exploit which causes the execute_this function to run AND generate output.
+Turn in a discussion of how you made this happen and any difficulties you had to
+overcome.
+
+	Executing 'perl exploit.pl --execute' will cause the execute_this function to be called and generate output.  There were two main problems in calling this function.  The stack needs to be setup so that the socket fd is located at ebp+8.  This is true in handleClient so that helps.  The other issue is that if you try to jump into execute_this by replacing an entry in the GOT, you will overwrite some of the code in execute this when freeing the buffer (shellcode + 8).  Additionally, starting at the beginning of execute_this will mess up the stack frame by reseting ebp to esp, which we don't want.  I found the simplest method to write a bit of shellcode which wrote my address into EAX, then doing a JMP EAX.  The stack frame was preserved, and overwrites were not a problem.
