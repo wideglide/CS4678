@@ -1,0 +1,43 @@
+Part I (80 points): Answer the following questions and develop the exploits described below.
+1. How does this program accept input from a user?
+	The server listens on port 4444 for tcp connections.  Buffered input is accepted from the user through the fgets function into a 256 byte buffer.  This buffer is then 'echoed' back to the user through an fprintf function on the open socket.
+
+2. Describe the vulnerability present in this program.
+	The fprintf fucntion is called with a single argument which points to the same buffer which accepts user input.  This leads yields a format string vulnability.  Effectively
+	fgets(buffer, 256, fp);
+	fprintf(fp, buffer);
+This could be easily fixed by changing the fprintf call to:
+	fprintf(fp, "%s", buffer);
+
+3. Discuss any restrictions on the user's input that must be taken into account when attempting to trigger the vulnerability.
+	The function fgets will read up to 255 bytes of user input unless a newline character or EOF is encountered.  The user input is then null termnitated.  No buffer overflow is possible.   
+
+4. Discuss the structure of a user input that will successfully avoid any restrictions and allow you to successfully take control of this program. Be as detailed as possible (size, format, content...). Make sure you detail exactly what you are overwriting in order to take control of the vulnerable application.
+
+	A format string exploit allows for a four byte write anywhere in writeable address space.  A logical choice for overwriting resembles choices that were used in heap overflow exploits.  The attacker can use the GOT, dtors section, or some other location specific to the program being exploited.  For my exploit, I chose the next fuction calls entry in the GOT, strncmp is called five instructions after fprintf.
+	In order to write to the strncmp location (0x08049e1c), we must provide this address as part of the format string.  We split the four byte write into two writes to 0x8049e1c & 0x8049e1e, which are the most signifiant and least significant two bytes of the pointer.  In order to write anything, we use the fprintf conversion specifier 'h' and 'n' which will write the total number of charcters printed thus far to the location specified by variable 'n'.  
+
+After some simple math, we arrive at a result similiar to:
+1) the buffer resides at 0xbfb83768, and the shellcode normally starts 40 bytes later; I planned to land in the middle of 8 NOP bytes at 0xbfb8378b
+2) So the data we want to write is 0xbfb8378b to location 0x8049e1c
+   this will write our shellcode address into the GOT entry for strncmp
+2) splitting the write into two, we have
+ upper = bfb8 lower = 378b
+       = 49080      = 14219
+                    -     8 (8 bytes of addresses)
+                    = 14211
+       - 14211
+       -     8          (8 bytes of format string)
+       = 34861
+3) our format string then starts with:
+<0x08049e1c><0x08049e1e>%14211c%6$hn%34861c%5$hn
+   - 5$ and 6$ are the locations of the memory addresses 0x8049e1c and 0x8049e1e contained in the format string
+4) finally we add 8 bytes of NOP padding and the shellcode
+
+
+5. Develop an exploit that injects shellcode as part of the user supplied input and transfers control to that shell code. You must utilize shellcode that results in an interactive shell.
+	exploit.pl --shell
+6. Discuss a target independent means of determining the location of your shellcode. In other words, if you knew a target was running this service, but you had no idea where your shellcode would end up in memory, how would you go about determining the address your shellcode is likely to land at so that you could successfully exploit the target (remember you don't get to run a debugger on the target in this case, all you get to do is connect to the service. Think information leak here).
+	Thankfully, when printf is called we can find the address of the buffer being written on the stack.  Sending this string "%69$x" will print the address of the buffer.
+
+
